@@ -15,6 +15,16 @@ stream = p.open(format=pyaudio.paInt16,
                 input=True,
                 frames_per_buffer=CHUNK)
 
+# Function to map frequency to wavelength in nm (simple linear mapping)
+def frequency_to_wavelength_simple(frequency):
+    min_freq = 20
+    max_freq = 20000
+    min_wavelength = 380
+    max_wavelength = 700
+    norm_frequency = (frequency - min_freq) / (max_freq - min_freq)
+    wavelength = max_wavelength - norm_frequency * (max_wavelength - min_wavelength)
+    return wavelength
+
 # Function to map frequency to wavelength in nm (using octave method)
 def frequency_to_wavelength_octave(frequency):
     if frequency < 20 or frequency > 20000:
@@ -27,28 +37,19 @@ def frequency_to_wavelength_octave(frequency):
     wavelength = min_wavelength + norm_frequency * (max_wavelength - min_wavelength)
     return wavelength
 
-# Function to map frequency to wavelength in nm (simple linear mapping)
-def frequency_to_wavelength_simple(frequency):
-    min_freq = 20
+# Function to map frequency to wavelength in nm (starting from 440 Hz, entire spectrum)
+def frequency_to_wavelength_440hz(frequency):
+    min_freq = 440
     max_freq = 20000
     min_wavelength = 380
     max_wavelength = 700
-    norm_frequency = (frequency - min_freq) / (max_freq - min_freq)
-    wavelength = max_wavelength - norm_frequency * (max_wavelength - min_wavelength)
-    return wavelength
-
-# Function to map frequency to wavelength in nm (starting from 440 Hz)
-def frequency_to_wavelength_440hz(frequency):
-    base_frequency = 440  # Starting frequency
-    min_wavelength = 380
-    max_wavelength = 700
-    if frequency < base_frequency:
+    if frequency < min_freq:
         return min_wavelength
-    elif frequency > base_frequency * 2:
+    elif frequency > max_freq:
         return max_wavelength
     else:
-        norm_frequency = (frequency - base_frequency) / (base_frequency)
-        wavelength = min_wavelength + norm_frequency * (max_wavelength - min_wavelength)
+        norm_frequency = (frequency - min_freq) / (max_freq - min_freq)
+        wavelength = max_wavelength - norm_frequency * (max_wavelength - min_wavelength)
         return wavelength
 
 # Function to convert wavelength to RGB color
@@ -102,7 +103,9 @@ def wavelength_to_rgb(wavelength):
 
 # Function to map frequency to color using the selected method
 def frequency_to_color(frequency, method):
-    if method == "octave":
+    if method == "simple":
+        wavelength = frequency_to_wavelength_simple(frequency)
+    elif method == "octave":
         wavelength = frequency_to_wavelength_octave(frequency)
     elif method == "440hz":
         wavelength = frequency_to_wavelength_440hz(frequency)
