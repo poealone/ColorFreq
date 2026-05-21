@@ -1,3 +1,5 @@
 pyaudio
 numpy
 matplotlib
+sounddevice
+pygame
