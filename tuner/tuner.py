@@ -244,6 +244,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list-protocols", action="store_true", help="Print the protocol catalog and exit.")
     parser.add_argument("--protocol", metavar="ID", help="Launch directly with a named protocol (see --list-protocols).")
     parser.add_argument("--gui", action="store_true", help="Launch the tkinter GUI control panel.")
+    parser.add_argument("--scope", action="store_true", help="Launch the oscilloscope (mic or WASAPI loopback capture).")
+    parser.add_argument("--scope-source", choices=("mic", "loopback"), default="mic", help="Oscilloscope audio source.")
+    parser.add_argument("--scope-view", choices=("xy", "time"), default="xy", help="Oscilloscope default view.")
     parser.add_argument("--windowed", action="store_true", help="Run visual in a window instead of fullscreen.")
     parser.add_argument("--no-vsync", action="store_true", help="Disable VSync (introduces tearing).")
     args = parser.parse_args(argv)
@@ -252,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
         return list_devices()
     if args.list_protocols:
         return list_protocols()
+    if args.scope:
+        from .oscilloscope import Oscilloscope
+        return Oscilloscope(source=args.scope_source, view=args.scope_view).run()
     if args.gui:
         from .gui import TunerGUI
         return TunerGUI().run()
