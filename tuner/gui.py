@@ -239,6 +239,13 @@ class TunerGUI:
         )
         self.start_btn.pack(fill=tk.X)
 
+        scope_bar = ttk.Frame(parent, padding=(0, 0))
+        scope_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        ttk.Button(
+            scope_bar, text="Open Oscilloscope (mic / loopback)",
+            command=self._on_open_scope,
+        ).pack(fill=tk.X)
+
     # ------------------------------------------------------------------
     # Catalog tree
     # ------------------------------------------------------------------
@@ -418,6 +425,20 @@ class TunerGUI:
         self.root.deiconify()
         self.root.lift()
         self.status_var.set("Session ended. Ready for another.")
+
+    def _on_open_scope(self):
+        """Spawn the oscilloscope as a separate process so it can run alongside
+        the GUI and any active session (pygame visual + audio)."""
+        import subprocess
+        import sys
+        try:
+            subprocess.Popen(
+                [sys.executable, "-m", "tuner.tuner", "--scope"],
+                cwd=None,
+            )
+            self.status_var.set("Oscilloscope launched in a new window.")
+        except Exception as e:
+            self.status_var.set(f"Could not launch oscilloscope: {e}")
 
     # ------------------------------------------------------------------
     # Main loop

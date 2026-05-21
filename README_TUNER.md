@@ -19,11 +19,39 @@ python -m tuner.tuner
 Optional flags:
 
 - `--gui` — launch the tkinter GUI control panel (recommended for browsing the protocol catalog).
+- `--scope` — launch the oscilloscope (mic or WASAPI loopback capture; not a digital re-render). See the **Oscilloscope** section below.
 - `--list-devices` — print audio devices and exit (Windows multi-output troubleshooting).
 - `--list-protocols` — print the full protocol catalog (id, Hz, source, evidence tag) and exit.
 - `--protocol <id>` — launch directly into a named protocol from the catalog (e.g. `--protocol gamma40`, `--protocol schumann`, `--protocol focus_15`).
 - `--windowed` — run the visual in a window instead of fullscreen.
 - `--no-vsync` — disable VSync (introduces tearing, not recommended).
+
+## Oscilloscope (mind/scope sync exercise)
+
+`python -m tuner.tuner --scope` opens a real-signal oscilloscope. It does **not** re-render the formula — it captures the actual played audio either from your microphone (full acoustic loop: DAC → speaker → air → mic → ADC → screen) or via Windows WASAPI loopback (bit-perfect tap of the system audio mix bus). What you see is the signal that's really coming out.
+
+**Views:**
+- **X-Y Lissajous** (default): X = left channel, Y = right channel. Two perfectly phase-locked tones draw a stable straight line; a binaural beat draws a slowly-rotating ellipse. The HUD shows L↔R **coherence** (Pearson correlation) — `+1.0` is a perfectly locked line, `0` is uncorrelated. The status indicator goes `BEATING → SYNCING → LOCKED` as coherence climbs.
+- **Time-domain**: classic horizontal-sweep scope with L (green) and R (yellow) traces overlaid. Press `T` to switch, `X` to switch back.
+
+**Hotkeys:**
+
+| Key | Action |
+|---|---|
+| `X` / `T` | Lissajous / Time-domain view |
+| `M` / `L` | Source: Microphone / WASAPI Loopback |
+| `+` / `-` | Gain ±25% |
+| `C` | Clear phosphor trail |
+| `Esc` / `Q` | Quit |
+
+**Honest framing — what "flattening with the mind" actually means.** A binaural beat with `f_L ≠ f_R` is deterministic — the Lissajous *will* keep rotating regardless of your mental state. The Lissajous can only collapse to a stable line if L and R are at the same frequency (i.e. `beat_hz = 0`). So there are two legitimate paths to "flatten" the scope while watching:
+
+1. **Microphone source + steady breathing.** Mic picks up room acoustics, your breath, your posture. Stable focused breathing visibly reduces background noise and the trace becomes cleaner. This is real mind/body biofeedback.
+2. **Intent-guided manipulation.** Open the main session, drop `beat_hz` toward zero via the hotkeys (`↓`) while watching the scope. The Lissajous slows its rotation and collapses to a line as you approach `beat_hz = 0`. The "mind" here is operating the keyboard — but if that's how you experience it, the feedback loop is real.
+
+If you're looking for evidence of consciousness directly altering audio waveforms via attention alone, this tool won't provide it — but it's an interesting setup for honest interoceptive practice and a satisfying visualization of phase locking.
+
+**Launching alongside a session:** open the GUI (`--gui`), click the **Open Oscilloscope** button — it spawns the scope as a separate process, so it runs alongside any active photic-flicker session.
 
 ## GUI
 
