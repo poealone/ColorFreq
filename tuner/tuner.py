@@ -244,9 +244,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list-protocols", action="store_true", help="Print the protocol catalog and exit.")
     parser.add_argument("--protocol", metavar="ID", help="Launch directly with a named protocol (see --list-protocols).")
     parser.add_argument("--gui", action="store_true", help="Launch the tkinter GUI control panel.")
-    parser.add_argument("--scope", action="store_true", help="Launch the oscilloscope (mic or WASAPI loopback capture).")
-    parser.add_argument("--scope-source", choices=("mic", "loopback"), default="mic", help="Oscilloscope audio source.")
+    parser.add_argument("--scope", action="store_true", help="Launch the oscilloscope (captures audio from any input device).")
+    parser.add_argument("--scope-device", metavar="SUBSTR", default=None,
+                        help="Oscilloscope: pick first input device whose name contains SUBSTR (case-insensitive). "
+                             "Defaults to system default input. Cycle with D/B at runtime.")
     parser.add_argument("--scope-view", choices=("xy", "time"), default="xy", help="Oscilloscope default view.")
+    parser.add_argument("--scope-list-devices", action="store_true",
+                        help="List input devices the scope can use and exit.")
     parser.add_argument("--windowed", action="store_true", help="Run visual in a window instead of fullscreen.")
     parser.add_argument("--no-vsync", action="store_true", help="Disable VSync (introduces tearing).")
     args = parser.parse_args(argv)
@@ -255,9 +259,18 @@ def main(argv: list[str] | None = None) -> int:
         return list_devices()
     if args.list_protocols:
         return list_protocols()
+    if args.scope_list_devices:
+        from .oscilloscope import list_input_devices
+        devs = list_input_devices()
+        if not devs:
+            print("No input devices found.")
+            return 1
+        for i, d in enumerate(devs):
+            print(f"  [{i:2d}] dev#{d.index:3d}  {d.hostapi:24s}  {d.channels}ch @ {d.samplerate}Hz   {d.name}")
+        return 0
     if args.scope:
         from .oscilloscope import Oscilloscope
-        return Oscilloscope(source=args.scope_source, view=args.scope_view).run()
+        return Oscilloscope(view=args.scope_view, device_hint=args.scope_device).run()
     if args.gui:
         from .gui import TunerGUI
         return TunerGUI().run()
