@@ -28,7 +28,24 @@ Optional flags:
 
 ## Oscilloscope (mind/scope sync exercise)
 
-`python -m tuner.tuner --scope` opens a real-signal oscilloscope. It does **not** re-render the formula — it captures the actual played audio either from your microphone (full acoustic loop: DAC → speaker → air → mic → ADC → screen) or via Windows WASAPI loopback (bit-perfect tap of the system audio mix bus). What you see is the signal that's really coming out.
+`python -m tuner.tuner --scope` opens a real-signal oscilloscope. It does **not** re-render the formula — it captures the actual audio coming in from whichever input device you point it at, so what you see is the signal that's really there.
+
+**Picking an input device.** On launch the scope enumerates every input-capable device on your system (microphones, audio-interface line-ins, virtual cables like VoiceMeeter / VB-CABLE / Stereo Mix when installed) and binds to the system default. Cycle through them at runtime with `D` (next) and `B` or `Shift+D` (previous); the current device name appears in the HUD.
+
+Pick a device at launch with `--scope-device <substring>` (case-insensitive name match), or print the full list with `--scope-list-devices`:
+
+```
+py -3 -m tuner.tuner --scope --scope-device focusrite       # match Focusrite first
+py -3 -m tuner.tuner --scope --scope-device voicemeeter     # capture VoiceMeeter
+py -3 -m tuner.tuner --scope-list-devices                   # see what's available
+```
+
+**Capturing the binaural playing from the tuner itself.** A few options:
+
+- **Microphone:** simplest. Speakers play → mic listens → scope sees the binaural plus any room sound and your breath. Real mind/body biofeedback path: steady focused breathing visibly stabilizes the trace.
+- **Audio-interface line-in loopback (hardware):** if you have an audio interface, run a physical cable from a line-out back into a line-in and pick that line-in as the scope's source.
+- **Virtual audio cable (software):** install [VB-CABLE](https://vb-audio.com/Cable/) or [VoiceMeeter](https://vb-audio.com/Voicemeeter/), route the tuner's playback *through* the virtual cable (e.g. set "VoiceMeeter Input" as Windows default playback), then point the scope at the matching "Output" capture device. Bit-perfect digital tap.
+- **Windows Stereo Mix:** built-in but usually disabled. Enable in Sound Settings → Recording → right-click → Show Disabled Devices → Enable.
 
 **Views:**
 - **X-Y Lissajous** (default): X = left channel, Y = right channel. Two perfectly phase-locked tones draw a stable straight line; a binaural beat draws a slowly-rotating ellipse. The HUD shows L↔R **coherence** (Pearson correlation) — `+1.0` is a perfectly locked line, `0` is uncorrelated. The status indicator goes `BEATING → SYNCING → LOCKED` as coherence climbs.
@@ -39,7 +56,8 @@ Optional flags:
 | Key | Action |
 |---|---|
 | `X` / `T` | Lissajous / Time-domain view |
-| `M` / `L` | Source: Microphone / WASAPI Loopback |
+| `D` / `B` | Next / previous input device (Shift+D also goes back) |
+| `R` | Re-enumerate input devices (after plugging something in) |
 | `+` / `-` | Gain ±25% |
 | `C` | Clear phosphor trail |
 | `Esc` / `Q` | Quit |

@@ -242,7 +242,7 @@ class TunerGUI:
         scope_bar = ttk.Frame(parent, padding=(0, 0))
         scope_bar.pack(side=tk.BOTTOM, fill=tk.X)
         ttk.Button(
-            scope_bar, text="Open Oscilloscope (mic / loopback)",
+            scope_bar, text="Open Oscilloscope (any input device)",
             command=self._on_open_scope,
         ).pack(fill=tk.X)
 
