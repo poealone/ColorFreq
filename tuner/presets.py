@@ -40,7 +40,7 @@ class SessionParams:
     audio_mode: str = "binaural"
     carrier_hz: float = 200.0
     beat_hz: float = 10.0
-    volume: float = 0.3
+    volume: float = 0.1
     fade_in_s: float = 5.0
     fade_out_s: float = 5.0
     duration_s: float | None = None

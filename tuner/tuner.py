@@ -187,7 +187,7 @@ def menu_loop() -> SessionParams | None:
         audio_mode = _prompt_audio_mode()
         carrier_hz = _prompt_float("Carrier Hz", 200.0, 20.0, 4000.0)
 
-    volume = _prompt_float("Volume 0.0-1.0", 0.3, 0.0, 1.0)
+    volume = _prompt_float("Volume 0.0-1.0", 0.1, 0.0, 1.0)
     duration_raw = _prompt("Duration in minutes (blank = until you quit)", "")
     duration_s: float | None = None
     if duration_raw:
