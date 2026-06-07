@@ -472,9 +472,13 @@ class TunerGUI:
         self._feedback_camera_indices = [c.index for c in cams]
         self.feedback_camera_combo.configure(values=labels)
         if labels:
+            # Sync both the StringVar AND the combobox internal cursor so
+            # combo.current() returns a valid index even before any user click.
             current_label = self.feedback_camera_var.get()
-            if current_label not in labels:
-                self.feedback_camera_var.set(labels[0])
+            if current_label in labels:
+                self.feedback_camera_combo.current(labels.index(current_label))
+            else:
+                self.feedback_camera_combo.current(0)
             self.status_var.set(f"{len(cams)} camera(s) detected for video feedback.")
         else:
             self.feedback_camera_var.set("(no cameras detected)")
@@ -485,13 +489,20 @@ class TunerGUI:
         import subprocess
         import sys
         args = [sys.executable, "-m", "tuner.tuner", "--feedback"]
-        try:
-            idx = self.feedback_camera_combo.current()
-            if 0 <= idx < len(self._feedback_camera_indices):
-                cam_idx = self._feedback_camera_indices[idx]
-                args += ["--feedback-camera", str(cam_idx)]
-        except Exception:
-            pass
+        cam_idx = None
+        # Prefer the combobox's tracked cursor; fall back to label match if -1.
+        idx = self.feedback_camera_combo.current()
+        if 0 <= idx < len(self._feedback_camera_indices):
+            cam_idx = self._feedback_camera_indices[idx]
+        else:
+            label = self.feedback_camera_var.get()
+            values = list(self.feedback_camera_combo["values"])
+            if label in values:
+                pos = values.index(label)
+                if 0 <= pos < len(self._feedback_camera_indices):
+                    cam_idx = self._feedback_camera_indices[pos]
+        if cam_idx is not None:
+            args += ["--feedback-camera", str(cam_idx)]
         try:
             subprocess.Popen(args, cwd=None)
             label = self.feedback_camera_var.get()

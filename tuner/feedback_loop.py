@@ -23,13 +23,18 @@ or via tuner:
 from __future__ import annotations
 
 import sys
+import time
 from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
 import pygame
 
-CV_BACKEND = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
+if sys.platform == "win32":
+    CV_BACKENDS = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY]
+else:
+    CV_BACKENDS = [cv2.CAP_ANY]
+CV_BACKEND = CV_BACKENDS[0]
 
 OVERLAY_TINTS: list[tuple[str, tuple[int, int, int] | None]] = [
     ("off",      None),
@@ -50,16 +55,25 @@ class CameraInfo:
 
 
 def list_cameras(max_probe: int = 10) -> list[CameraInfo]:
-    """Probe indices 0..max_probe-1 and return the ones that yield a frame."""
+    """Probe indices 0..max_probe-1 with each backend and return cameras
+    that yield a frame. Avoids duplicates by (index, w, h)."""
     out: list[CameraInfo] = []
-    for i in range(max_probe):
-        cap = cv2.VideoCapture(i, CV_BACKEND)
-        if cap.isOpened():
-            ok, frame = cap.read()
-            if ok and frame is not None:
-                h, w = frame.shape[:2]
-                out.append(CameraInfo(index=i, width=w, height=h))
-        cap.release()
+    seen: set[tuple[int, int, int]] = set()
+    for backend in CV_BACKENDS:
+        for i in range(max_probe):
+            cap = cv2.VideoCapture(i, backend)
+            if cap.isOpened():
+                ok, frame = cap.read()
+                if ok and frame is not None:
+                    h, w = frame.shape[:2]
+                    key = (i, w, h)
+                    if key not in seen:
+                        seen.add(key)
+                        out.append(CameraInfo(index=i, width=w, height=h))
+            cap.release()
+        # Only probe with the first backend that yields any cameras
+        if out:
+            break
     return out
 
 
@@ -224,22 +238,37 @@ class FeedbackLoop:
         if self.cap is not None:
             self.cap.release()
             self.cap = None
+            # Windows DSHOW occasionally fails to fully release the device
+            # before the next open call; a short sleep here makes the switch
+            # reliable in practice.
+            time.sleep(0.12)
         cam = self.current_camera
         if cam is None:
             self.status = "No cameras detected. Connect a webcam and press R to re-enumerate."
             return
-        try:
-            self.cap = cv2.VideoCapture(cam.index, CV_BACKEND)
-            if not self.cap.isOpened():
-                raise RuntimeError("VideoCapture.isOpened() returned False")
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, cam.width)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cam.height)
-            self.status = f"Camera #{cam.index}  {cam.width}x{cam.height}"
-            self.prev_out = None
-        except Exception as e:
-            print(f"[feedback] could not open camera index {cam.index}: {e}", file=sys.stderr)
-            self.status = f"Could not open camera #{cam.index}: {e}"
-            self.cap = None
+        last_err: Exception | None = None
+        for backend in CV_BACKENDS:
+            try:
+                cap = cv2.VideoCapture(cam.index, backend)
+                if not cap.isOpened():
+                    cap.release()
+                    continue
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, cam.width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cam.height)
+                ok, _ = cap.read()
+                if not ok:
+                    cap.release()
+                    continue
+                self.cap = cap
+                self.status = f"Camera #{cam.index}  {cam.width}x{cam.height}"
+                self.prev_out = None
+                return
+            except Exception as e:
+                last_err = e
+        print(f"[feedback] could not open camera #{cam.index} on any backend: {last_err}",
+              file=sys.stderr)
+        self.status = f"Could not open camera #{cam.index}: {last_err}"
+        self.cap = None
 
     def _cycle_camera(self, step: int) -> None:
         if not self.cameras:
