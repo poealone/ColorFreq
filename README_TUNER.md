@@ -20,11 +20,73 @@ Optional flags:
 
 - `--gui` — launch the tkinter GUI control panel (recommended for browsing the protocol catalog).
 - `--scope` — launch the oscilloscope (mic or WASAPI loopback capture; not a digital re-render). See the **Oscilloscope** section below.
+- `--feedback` — launch the video feedback loop (webcam viewer with zoom/rotation/hue/overlay/echo filters). See the **Video Feedback Loop** section below.
+- `--feedback-list-cameras` — print detected webcams and exit.
+- `--feedback-camera <idx>` — pick which camera index to use (defaults to 0).
+- `--feedback-fullscreen` — start the feedback window fullscreen.
 - `--list-devices` — print audio devices and exit (Windows multi-output troubleshooting).
 - `--list-protocols` — print the full protocol catalog (id, Hz, source, evidence tag) and exit.
 - `--protocol <id>` — launch directly into a named protocol from the catalog (e.g. `--protocol gamma40`, `--protocol schumann`, `--protocol focus_15`).
 - `--windowed` — run the visual in a window instead of fullscreen.
 - `--no-vsync` — disable VSync (introduces tearing, not recommended).
+
+## Video Feedback Loop (scrying setup)
+
+`python -m tuner.tuner --feedback` opens a live webcam viewer with a per-frame filter pipeline. The intended use case is the **optical feedback loop**: point the webcam at the monitor displaying this window so the camera captures its own output, then dial in zoom slightly above 1.0, add a small color tint, and watch recursive fractal-like patterns emerge as small artifacts get amplified each cycle through the loop.
+
+**Honest framing.** The video-feedback optical phenomenon is real and well-documented. Bill Viola's *Information* (1973), the entire Steina/Woody Vasulka video-art tradition, and academic visual-perception work all describe it. The closest peer-reviewed cousin in the consciousness literature is Caputo (2010) *"Strange-Face-in-the-Mirror Illusion"* (*Perception* 39, 1007–1008) — staring into a low-lit mirror for ~10 minutes produces face-distortion hallucinations in most subjects, an effect of perceptual destabilization rather than anything supernatural.
+
+The **Scole Experiments** (UK, 1993–1998) used similar optical/acoustic feedback setups as a "scrying" or mediumistic-contact ritual, reporting communications with entities they named (including "Blue"). Those experiential claims are not validated by mainstream science. This tool ships the *configurable optical-feedback rig* without endorsing the entity-contact interpretation — what you do with the patterns you see is your own practice.
+
+### Filter pipeline (in order)
+
+```
+webcam frame
+  → zoom              (cv2 ROI + resize)
+  → rotation          (cv2.warpAffine)
+  → hue shift         (HSV channel roll)
+  → brightness / contrast
+  → color overlay     (alpha-blend with solid tint: red/orange/green/cyan/blue/magenta)
+  → gaussian blur
+  → echo              (α·prev_output_frame + (1-α)·current — digital feedback loop)
+  → kaleidoscope      (optional mirror)
+  → display
+```
+
+The **echo** filter is software feedback (substitutes for the optical loop while dialing in filters, or stacks with it for stronger amplification). The optical loop is the physical setup.
+
+### Hotkeys
+
+| Key | Action |
+|---|---|
+| `Esc` / `Q` | Quit |
+| `F11` | Toggle fullscreen |
+| `Space` | Pause / resume capture |
+| `0` | Reset all filters to neutral |
+| `+` / `-` | Zoom ±10% |
+| `[` / `]` | Rotate ±5° |
+| `H` / `Shift+H` | Hue shift ±5° |
+| `B` / `Shift+B` | Brightness ±0.05 |
+| `K` / `Shift+K` | Contrast ±0.05 |
+| `O` | Cycle color overlay (off → red → orange → green → cyan → blue → magenta → off) |
+| `T` / `Shift+T` | Color overlay strength ±0.05 |
+| `F` / `Shift+F` | Blur kernel ±2 |
+| `E` / `Shift+E` | Echo blend ±0.05 (0 = off, 0.95 = strong trails) |
+| `M` | Toggle kaleidoscope mirror |
+| `C` / `Shift+C` | Next / previous webcam |
+| `R` | Re-enumerate webcams |
+| `I` | Toggle HUD |
+
+### Setting up the scrying loop
+
+1. Launch fullscreen on the monitor you want to scry into: `py -3 -m tuner.tuner --feedback --feedback-fullscreen`
+2. Point your webcam at the monitor at a slight angle so it sees the window clearly.
+3. Dim ambient lighting.
+4. Adjust zoom slightly above 1.0 and add a small color tint (`O` once or twice, `T` to ~0.2). You should immediately see recursive replication patterns.
+5. Slowly tweak rotation, hue, and echo while watching. Each parameter changes the attractor of the loop.
+6. Stay with it for 10+ minutes for the perceptual destabilization effect (Caputo's mirror window).
+
+**PSE note:** video feedback can produce flickering as the loop crosses certain stability thresholds. The same epilepsy warning that applies to the photic-flicker session applies here — do not use this tool if you have a history of photosensitive seizures.
 
 ## Oscilloscope (mind/scope sync exercise)
 
