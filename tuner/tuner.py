@@ -251,6 +251,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scope-view", choices=("xy", "time"), default="xy", help="Oscilloscope default view.")
     parser.add_argument("--scope-list-devices", action="store_true",
                         help="List input devices the scope can use and exit.")
+    parser.add_argument("--feedback", action="store_true",
+                        help="Launch the video feedback loop (webcam viewer for scrying setup).")
+    parser.add_argument("--feedback-camera", type=int, default=None,
+                        help="Video feedback camera index (see --feedback-list-cameras).")
+    parser.add_argument("--feedback-fullscreen", action="store_true",
+                        help="Start the video feedback window fullscreen.")
+    parser.add_argument("--feedback-list-cameras", action="store_true",
+                        help="List webcams available to the video feedback loop and exit.")
     parser.add_argument("--windowed", action="store_true", help="Run visual in a window instead of fullscreen.")
     parser.add_argument("--no-vsync", action="store_true", help="Disable VSync (introduces tearing).")
     args = parser.parse_args(argv)
@@ -271,6 +279,21 @@ def main(argv: list[str] | None = None) -> int:
     if args.scope:
         from .oscilloscope import Oscilloscope
         return Oscilloscope(view=args.scope_view, device_hint=args.scope_device).run()
+    if args.feedback_list_cameras:
+        from .feedback_loop import list_cameras
+        cams = list_cameras()
+        if not cams:
+            print("No cameras detected.")
+            return 1
+        for c in cams:
+            print(f"  index {c.index}: {c.width}x{c.height}")
+        return 0
+    if args.feedback:
+        from .feedback_loop import FeedbackLoop
+        return FeedbackLoop(
+            camera_index=args.feedback_camera,
+            fullscreen=args.feedback_fullscreen,
+        ).run()
     if args.gui:
         from .gui import TunerGUI
         return TunerGUI().run()

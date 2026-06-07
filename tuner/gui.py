@@ -246,6 +246,13 @@ class TunerGUI:
             command=self._on_open_scope,
         ).pack(fill=tk.X)
 
+        feedback_bar = ttk.Frame(parent, padding=(0, 0))
+        feedback_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        ttk.Button(
+            feedback_bar, text="Open Video Feedback Loop (webcam scrying setup)",
+            command=self._on_open_feedback,
+        ).pack(fill=tk.X)
+
     # ------------------------------------------------------------------
     # Catalog tree
     # ------------------------------------------------------------------
@@ -439,6 +446,19 @@ class TunerGUI:
             self.status_var.set("Oscilloscope launched in a new window.")
         except Exception as e:
             self.status_var.set(f"Could not launch oscilloscope: {e}")
+
+    def _on_open_feedback(self):
+        """Spawn the video feedback loop as a separate process."""
+        import subprocess
+        import sys
+        try:
+            subprocess.Popen(
+                [sys.executable, "-m", "tuner.tuner", "--feedback"],
+                cwd=None,
+            )
+            self.status_var.set("Video feedback loop launched in a new window.")
+        except Exception as e:
+            self.status_var.set(f"Could not launch video feedback loop: {e}")
 
     # ------------------------------------------------------------------
     # Main loop

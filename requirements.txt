@@ -3,3 +3,4 @@ numpy
 matplotlib
 sounddevice
 pygame
+opencv-python
