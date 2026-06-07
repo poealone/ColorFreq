@@ -248,10 +248,23 @@ class TunerGUI:
 
         feedback_bar = ttk.Frame(parent, padding=(0, 0))
         feedback_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        cam_row = ttk.Frame(feedback_bar)
+        cam_row.pack(fill=tk.X, pady=(0, 2))
+        ttk.Label(cam_row, text="Camera:").pack(side=tk.LEFT, padx=(0, 6))
+        self.feedback_camera_var = tk.StringVar()
+        self.feedback_camera_combo = ttk.Combobox(
+            cam_row, textvariable=self.feedback_camera_var, state="readonly", width=28,
+        )
+        self.feedback_camera_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(cam_row, text="Refresh", command=self._refresh_feedback_cameras).pack(side=tk.LEFT, padx=(6, 0))
+
         ttk.Button(
             feedback_bar, text="Open Video Feedback Loop (webcam scrying setup)",
             command=self._on_open_feedback,
         ).pack(fill=tk.X)
+
+        self._refresh_feedback_cameras()
 
     # ------------------------------------------------------------------
     # Catalog tree
@@ -447,16 +460,42 @@ class TunerGUI:
         except Exception as e:
             self.status_var.set(f"Could not launch oscilloscope: {e}")
 
+    def _refresh_feedback_cameras(self):
+        """Enumerate webcams and populate the camera dropdown."""
+        try:
+            from .feedback_loop import list_cameras
+            cams = list_cameras()
+        except Exception as e:
+            self.status_var.set(f"Could not enumerate cameras: {e}")
+            cams = []
+        labels = [f"#{c.index}  {c.width}x{c.height}" for c in cams]
+        self._feedback_camera_indices = [c.index for c in cams]
+        self.feedback_camera_combo.configure(values=labels)
+        if labels:
+            current_label = self.feedback_camera_var.get()
+            if current_label not in labels:
+                self.feedback_camera_var.set(labels[0])
+            self.status_var.set(f"{len(cams)} camera(s) detected for video feedback.")
+        else:
+            self.feedback_camera_var.set("(no cameras detected)")
+            self.status_var.set("No cameras detected.")
+
     def _on_open_feedback(self):
         """Spawn the video feedback loop as a separate process."""
         import subprocess
         import sys
+        args = [sys.executable, "-m", "tuner.tuner", "--feedback"]
         try:
-            subprocess.Popen(
-                [sys.executable, "-m", "tuner.tuner", "--feedback"],
-                cwd=None,
-            )
-            self.status_var.set("Video feedback loop launched in a new window.")
+            idx = self.feedback_camera_combo.current()
+            if 0 <= idx < len(self._feedback_camera_indices):
+                cam_idx = self._feedback_camera_indices[idx]
+                args += ["--feedback-camera", str(cam_idx)]
+        except Exception:
+            pass
+        try:
+            subprocess.Popen(args, cwd=None)
+            label = self.feedback_camera_var.get()
+            self.status_var.set(f"Video feedback loop launched ({label}).")
         except Exception as e:
             self.status_var.set(f"Could not launch video feedback loop: {e}")
 
